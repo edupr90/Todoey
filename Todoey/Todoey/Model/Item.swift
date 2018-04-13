@@ -9,7 +9,9 @@
 import Foundation
 import UIKit
 
-class Item {
+// Codable especifica que es encoder y decoder
+
+class Item: Codable{
     var title: String = ""
     var done: Bool = false
 }

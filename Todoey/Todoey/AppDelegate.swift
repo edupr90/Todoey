@@ -19,7 +19,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         //Cuando empieza la aplicacion esta funcion es lo primero que corre.
         
         //Verificar la data de UserDefault File, necesitamos buscar el path donde se esta almacenando la data.
-        print(NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).last! as String)
+        
         
         return true
     }
