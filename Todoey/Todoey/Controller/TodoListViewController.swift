@@ -8,9 +8,11 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class TodoListViewController: UITableViewController {
+class TodoListViewController: SwipeTableViewController {
 
+    @IBOutlet weak var searchBar: UISearchBar!
     
     var todoItems: Results<Item>?
     
@@ -27,28 +29,67 @@ class TodoListViewController: UITableViewController {
         
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
-      
-        
         // Do any additional setup after loading the view, typically from a nib.
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+      
+            title = selectedCategory?.name
+        
+            guard let color = selectedCategory?.backgroundColor else{fatalError()}
+ 
+            updateNavBar(withHexCode: color)
+        
+        
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        
+        updateNavBar(withHexCode: "1D9BF6")
+        
+    }
+    
+    //MARK: - Nav Bar Setup Methods
+    
+    func updateNavBar(withHexCode colorHexCode : String) {
+      
+        guard let navBar = navigationController?.navigationBar else {
+            fatalError("Navigation Controller does not exists")}
+        
+        guard let navBarColor = UIColor(hexString: colorHexCode) else {fatalError()}
+        
+        navBar.barTintColor = navBarColor
+        
+        navBar.tintColor = ContrastColorOf(navBarColor, returnFlat: true)
+        
+        navBar.largeTitleTextAttributes = [NSAttributedStringKey.foregroundColor : ContrastColorOf(navBarColor, returnFlat: true)]
+        
+        searchBar.barTintColor = navBarColor
+    }
 
-   //MARK - Tableview Datasource Methods
+    //MARK: - Tableview Datasource Methods
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCells")
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         if let item = todoItems?[indexPath.row] {
             
-            cell?.textLabel?.text = item.title
+            cell.textLabel?.text = item.title
             
-            cell?.accessoryType = item.done == true ? .checkmark : .none
+            if let color = UIColor(hexString: selectedCategory!.backgroundColor)?.darken(byPercentage: CGFloat(indexPath.row) / CGFloat(todoItems!.count)){
+                cell.backgroundColor = color
+                cell.textLabel?.textColor = ContrastColorOf(color, returnFlat: true)
+            }
+            
+            cell.accessoryType = item.done == true ? .checkmark : .none
+            
         }
         else {
-            cell?.textLabel?.text = "No Item Added"
+            cell.textLabel?.text = "No Item Added"
         }
        
-        return cell!
+        return cell
         
     }
     
@@ -56,7 +97,7 @@ class TodoListViewController: UITableViewController {
         return todoItems?.count ?? 1
     }
     
-    //MARK - TableView Delegate Methods
+    //MARK: - TableView Delegate Methods
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
@@ -78,7 +119,7 @@ class TodoListViewController: UITableViewController {
         
     }
     
-    //MARK - Add New Items
+    //MARK: - Add New Items
     
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         
@@ -122,25 +163,22 @@ class TodoListViewController: UITableViewController {
 
         todoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
         
-        //let request : NSFetchRequest<Item> = Item.fetchRequest()
-        
-//        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
-//
-//        if let additinalPredicate = predicate {
-//           request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additinalPredicate])
-//        }
-//        else {
-//            request.predicate = categoryPredicate
-//        }
-//
-//        do {
-//            itemArray = try context.fetch(request)
-//        }
-//        catch {
-//            print("Error fectching context \(error)")
-//        }
-        
         tableView.reloadData()
+    }
+    
+    //MARK: - Delete item from tableview
+    override func updateModel(at indexPath: IndexPath) {
+        if let itemForDeletion = self.todoItems?[indexPath.row] {
+            do {
+                 try self.realm.write {
+                    self.realm.delete(itemForDeletion)
+                    }
+                }
+                catch {
+                    print("Error deleting category \(error)")
+                }
+            }
+        
     }
     
 }
